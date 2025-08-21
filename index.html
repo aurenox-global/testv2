@@ -1,4 +1,4 @@
-    <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -529,6 +529,66 @@
             box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
         }
 
+        .gps-debug {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            border: 2px solid #4caf50;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .gps-debug.error {
+            border-color: #f44336;
+            background: rgba(255, 107, 107, 0.1);
+        }
+
+        .gps-debug h4 {
+            margin-bottom: 12px;
+            color: #333;
+            font-size: 16px;
+        }
+
+        .gps-debug-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding: 4px 0;
+        }
+
+        .gps-debug-label {
+            font-weight: 600;
+            color: #555;
+        }
+
+        .gps-debug-value {
+            color: #667eea;
+            font-family: monospace;
+        }
+
+        .movement-log {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 12px;
+            padding: 12px;
+            margin-top: 12px;
+            max-height: 120px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+        }
+
+        .movement-entry {
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 4px;
+            font-family: monospace;
+        }
+
+        .movement-entry.detected {
+            color: #4caf50;
+            font-weight: bold;
+        }
+
         .hidden {
             display: none !important;
         }
@@ -594,6 +654,45 @@
             </div>
         </div>
 
+        <!-- GPS Debug Panel (oculto por defecto) -->
+        <div id="gpsDebug" class="gps-debug hidden">
+            <h4>🛰️ Debug GPS</h4>
+            
+            <div class="gps-debug-item">
+                <span class="gps-debug-label">Estado:</span>
+                <span class="gps-debug-value" id="gpsStatus">Inicializando...</span>
+            </div>
+            
+            <div class="gps-debug-item">
+                <span class="gps-debug-label">Tracking:</span>
+                <span class="gps-debug-value" id="trackingActive">No</span>
+            </div>
+            
+            <div class="gps-debug-item">
+                <span class="gps-debug-label">Última actualización:</span>
+                <span class="gps-debug-value" id="lastUpdate">Nunca</span>
+            </div>
+            
+            <div class="gps-debug-item">
+                <span class="gps-debug-label">Precisión:</span>
+                <span class="gps-debug-value" id="currentAccuracy">N/A</span>
+            </div>
+            
+            <div class="gps-debug-item">
+                <span class="gps-debug-label">Posición:</span>
+                <span class="gps-debug-value" id="currentPosition">N/A</span>
+            </div>
+            
+            <div class="gps-debug-item">
+                <span class="gps-debug-label">Último movimiento:</span>
+                <span class="gps-debug-value" id="lastMovement">0 metros</span>
+            </div>
+            
+            <div class="movement-log" id="movementLog">
+                <div class="movement-entry">Log de movimientos...</div>
+            </div>
+        </div>
+
         <!-- Navigation Tabs -->
         <div class="nav-tabs">
             <button class="nav-tab active" onclick="switchTab('today')">Hoy</button>
@@ -626,6 +725,11 @@
             <!-- Controls -->
             <div class="controls">
                 <button class="btn success" onclick="startDelivery()">Iniciar Entrega</button>
+                <div class="btn-group">
+                    <button class="btn secondary" onclick="toggleGPSDebug()">🛰️ Debug GPS</button>
+                    <button class="btn secondary" onclick="testGPS()">🧪 Test GPS</button>
+                </div>
+                <button class="btn warning" onclick="showManualDistanceModal()" id="manualTrackingBtn">📍 Distancia Manual</button>
             </div>
 
             <!-- Delivery List -->
@@ -651,9 +755,13 @@
         <div id="historyTab" class="tab-content">
             <div class="history-section">
                 <div class="history-navigation">
-                    <button class="arrow-btn" onclick="changeHistoryView(-1)">◀</button>
+                    <div class="nav-arrows">
+                        <button class="arrow-btn" onclick="changeHistoryView(-1)">◀</button>
+                    </div>
                     <div class="history-date" id="historyDate">Noviembre 2024</div>
-                    <button class="arrow-btn" onclick="changeHistoryView(1)">▶</button>
+                    <div class="nav-arrows">
+                        <button class="arrow-btn" onclick="changeHistoryView(1)">▶</button>
+                    </div>
                 </div>
                 
                 <div class="calendar-view" id="calendarView">
@@ -790,6 +898,20 @@
         let currentHistoryDate = new Date();
         let deleteType = '';
         let deliveryCounter = 1;
+        let gpsEnabled = false;
+        let lastGPSUpdate = null;
+        let currentAccuracy = null;
+        let movementLog = [];
+        let gpsDebugVisible = false;
+
+        // Configuración GPS mejorada
+        const GPS_CONFIG = {
+            enableHighAccuracy: true,
+            timeout: 30000,
+            maximumAge: 3000,
+            minAccuracy: 30,
+            minDistance: 15
+        };
 
         // Cargar datos al iniciar
         document.addEventListener('DOMContentLoaded', function() {
@@ -798,42 +920,32 @@
             updateStats();
             updateDeliveryList();
             updateCalendarView();
-            
-            // Detectar si estamos en Telegram
+            updateGPSDebug();
             initializeTelegramSupport();
-            
-            // Solicitar permisos de geolocalización
             requestLocationPermission();
         });
 
         // Función para inicializar soporte de Telegram
         function initializeTelegramSupport() {
-            // Verificar si estamos en Telegram Web App
             if (window.Telegram && window.Telegram.WebApp) {
                 console.log('Ejecutándose en Telegram Web App');
-                
-                // Expandir la aplicación
                 window.Telegram.WebApp.expand();
-                
-                // Habilitar el botón de cierre
                 window.Telegram.WebApp.enableClosingConfirmation();
-                
-                // Configurar tema
                 document.body.style.backgroundColor = window.Telegram.WebApp.backgroundColor;
-                
                 showNotification('App iniciada en Telegram', 'info');
             }
         }
 
-        // Función mejorada para solicitar permisos de ubicación
+        // === SISTEMA GPS CORREGIDO ===
         async function requestLocationPermission() {
+            logMovement('🔄 Solicitando permisos GPS...');
+            updateGPSStatus('Solicitando permisos...');
+            
             try {
-                // Verificar si la geolocalización está disponible
                 if (!navigator.geolocation) {
                     throw new Error('Geolocalización no soportada');
                 }
 
-                // Primero intentar obtener permisos
                 if (navigator.permissions) {
                     const permission = await navigator.permissions.query({name: 'geolocation'});
                     console.log('Permiso de ubicación:', permission.state);
@@ -844,43 +956,311 @@
                     }
                 }
 
-                // Intentar obtener ubicación con timeout corto
-                const position = await getCurrentPosition();
+                const position = await getCurrentPositionRobust();
+                gpsEnabled = true;
+                lastPosition = {
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude,
+                    accuracy: position.coords.accuracy,
+                    timestamp: Date.now()
+                };
+                
+                updateGPSStatus('GPS habilitado');
+                updateGPSDebug();
+                logMovement(`✅ GPS activado - Precisión: ${position.coords.accuracy.toFixed(1)}m`);
                 showNotification('GPS activado correctamente', 'success');
                 
             } catch (error) {
                 console.warn('Error GPS:', error.message);
+                gpsEnabled = false;
+                updateGPSStatus(`Error: ${error.message}`);
+                updateGPSDebug();
+                logMovement(`❌ Error GPS: ${error.message}`);
                 showLocationHelp();
             }
         }
 
-        // Función para mostrar ayuda de ubicación
         function showLocationHelp() {
             const helpMessage = window.Telegram && window.Telegram.WebApp 
                 ? 'GPS limitado en Telegram. Para mejor precisión:\n• Abre en navegador\n• O habilita ubicación manualmente'
                 : 'Para usar GPS:\n• Permite ubicación en el navegador\n• Verifica permisos del sitio';
                 
             showNotification(helpMessage, 'warning');
-            
-            // Agregar botón para tracking manual si es necesario
-            addManualTrackingOption();
         }
 
-        // Función para agregar opción de tracking manual
-        function addManualTrackingOption() {
-            const controls = document.querySelector('.controls');
-            if (!document.getElementById('manualTrackingBtn') && controls) {
-                const manualBtn = document.createElement('button');
-                manualBtn.id = 'manualTrackingBtn';
-                manualBtn.className = 'btn secondary';
-                manualBtn.style.marginTop = '10px';
-                manualBtn.innerHTML = '📍 Agregar Distancia Manual';
-                manualBtn.onclick = showManualDistanceModal;
-                controls.appendChild(manualBtn);
+        function getCurrentPositionRobust() {
+            return new Promise((resolve, reject) => {
+                const startTime = Date.now();
+                logMovement('📡 Solicitando posición GPS...');
+                
+                const options = {
+                    enableHighAccuracy: GPS_CONFIG.enableHighAccuracy,
+                    timeout: window.Telegram && window.Telegram.WebApp ? 15000 : GPS_CONFIG.timeout,
+                    maximumAge: window.Telegram && window.Telegram.WebApp ? 10000 : GPS_CONFIG.maximumAge
+                };
+                
+                console.log('Solicitando ubicación con opciones:', options);
+                
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const elapsed = Date.now() - startTime;
+                        console.log(`✅ GPS obtenido en ${elapsed}ms:`, {
+                            lat: position.coords.latitude.toFixed(6),
+                            lng: position.coords.longitude.toFixed(6),
+                            accuracy: position.coords.accuracy.toFixed(1) + 'm'
+                        });
+                        
+                        if (position.coords.accuracy > GPS_CONFIG.minAccuracy) {
+                            logMovement(`⚠️ Precisión baja: ${position.coords.accuracy.toFixed(1)}m > ${GPS_CONFIG.minAccuracy}m`);
+                        }
+                        
+                        resolve(position);
+                    },
+                    (error) => {
+                        const elapsed = Date.now() - startTime;
+                        console.warn(`❌ Error GPS en ${elapsed}ms:`, error.code, error.message);
+                        
+                        let errorMsg = 'Error de GPS: ';
+                        switch(error.code) {
+                            case error.PERMISSION_DENIED:
+                                errorMsg += 'Permisos denegados';
+                                break;
+                            case error.POSITION_UNAVAILABLE:
+                                errorMsg += 'Ubicación no disponible';
+                                break;
+                            case error.TIMEOUT:
+                                errorMsg += 'Tiempo agotado';
+                                break;
+                            default:
+                                errorMsg += 'Error desconocido';
+                        }
+                        reject(new Error(errorMsg));
+                    },
+                    options
+                );
+            });
+        }
+
+        function startGPSTracking() {
+            if (!gpsEnabled || watchId) {
+                console.warn('⚠️ No se puede iniciar tracking - GPS:', gpsEnabled, 'WatchID:', watchId);
+                return;
+            }
+            
+            console.log('🟢 Iniciando tracking GPS continuo...');
+            logMovement('🟢 Tracking GPS iniciado');
+            updateGPSStatus('Tracking activo');
+            
+            const watchOptions = {
+                enableHighAccuracy: GPS_CONFIG.enableHighAccuracy,
+                maximumAge: window.Telegram && window.Telegram.WebApp ? 10000 : GPS_CONFIG.maximumAge,
+                timeout: window.Telegram && window.Telegram.WebApp ? 15000 : GPS_CONFIG.timeout
+            };
+            
+            watchId = navigator.geolocation.watchPosition(
+                updatePosition,
+                (error) => {
+                    console.warn('Error tracking position:', error);
+                    if (error.code === error.PERMISSION_DENIED) {
+                        showNotification('GPS bloqueado. Usa distancia manual.', 'warning');
+                        gpsEnabled = false;
+                    }
+                    updateGPSStatus(`Error tracking: ${error.message}`);
+                    updateGPSDebug();
+                },
+                watchOptions
+            );
+            
+            updateGPSDebug();
+        }
+
+        function stopGPSTracking() {
+            if (watchId) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+                console.log('🔴 Tracking GPS detenido');
+                logMovement('🔴 Tracking GPS detenido');
+                updateGPSDebug();
             }
         }
 
-        // Funciones de navegación
+        function updatePosition(position) {
+            if (!isShiftActive || !lastPosition) return;
+
+            try {
+                lastGPSUpdate = new Date();
+                currentAccuracy = position.coords.accuracy;
+                
+                const newPosition = {
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude
+                };
+
+                console.log('📍 Nueva posición GPS:', {
+                    lat: newPosition.lat.toFixed(6),
+                    lng: newPosition.lng.toFixed(6),
+                    accuracy: position.coords.accuracy.toFixed(1) + 'm',
+                    time: new Date().toLocaleTimeString()
+                });
+
+                // Verificar precisión
+                if (position.coords.accuracy > GPS_CONFIG.minAccuracy) {
+                    logMovement(`⚠️ Posición rechazada - Precisión: ${position.coords.accuracy.toFixed(1)}m`);
+                    updateGPSDebug();
+                    return;
+                }
+
+                const distance = calculateDistance(
+                    lastPosition.lat, lastPosition.lng,
+                    newPosition.lat, newPosition.lng
+                );
+
+                const threshold = window.Telegram && window.Telegram.WebApp ? 0.008 : 0.005;
+                const distanceMeters = distance * 1000;
+                
+                logMovement(`📏 Distancia calculada: ${distanceMeters.toFixed(1)}m`);
+
+                if (distance > threshold) {
+                    // Agregar distancia al total siempre que la jornada esté activa
+                    totalDistance += distance;
+                    
+                    // Si hay una entrega activa, también agregar a esa entrega
+                    if (currentDelivery) {
+                        currentDelivery.distance += distance;
+                        logMovement(`🚚 Entrega actual: +${distanceMeters.toFixed(1)}m | Total entrega: ${(currentDelivery.distance * 1000).toFixed(1)}m`);
+                    }
+                    
+                    lastPosition = newPosition;
+                    updateStats();
+                    saveToLocalStorage();
+                    
+                    // Log de movimiento detectado
+                    const logEntry = `✅ MOVIMIENTO: +${distanceMeters.toFixed(1)}m | Total: ${(totalDistance * 1000).toFixed(1)}m`;
+                    logMovement(logEntry, true);
+                    console.log('🎉 ' + logEntry);
+                    
+                    // Notificar al usuario
+                    showNotification(`📍 +${distanceMeters.toFixed(0)}m | Total: ${totalDistance.toFixed(2)}km`, 'success');
+                    
+                    // Actualizar último movimiento en debug
+                    if (gpsDebugVisible) {
+                        document.getElementById('lastMovement').textContent = `${distanceMeters.toFixed(1)} metros`;
+                    }
+                } else {
+                    logMovement(`⏸️ Movimiento menor: ${distanceMeters.toFixed(1)}m < ${(threshold * 1000).toFixed(1)}m`);
+                }
+
+                updateGPSDebug();
+            } catch (error) {
+                console.warn('Error en updatePosition:', error);
+            }
+        }
+
+        // Función para calcular distancia entre dos puntos
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                    Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        // === FUNCIONES GPS DEBUG ===
+        function toggleGPSDebug() {
+            gpsDebugVisible = !gpsDebugVisible;
+            const debugEl = document.getElementById('gpsDebug');
+            debugEl.classList.toggle('hidden', !gpsDebugVisible);
+            updateGPSDebug();
+        }
+
+        function updateGPSDebug() {
+            if (!gpsDebugVisible) return;
+            
+            document.getElementById('gpsStatus').textContent = gpsEnabled ? 
+                (watchId ? 'Activo y tracking' : 'Habilitado') : 'Deshabilitado';
+            
+            document.getElementById('trackingActive').textContent = watchId ? 'Sí' : 'No';
+            
+            document.getElementById('lastUpdate').textContent = lastGPSUpdate ? 
+                lastGPSUpdate.toLocaleTimeString() : 'Nunca';
+            
+            document.getElementById('currentAccuracy').textContent = currentAccuracy ? 
+                `${currentAccuracy.toFixed(1)}m` : 'N/A';
+            
+            if (lastPosition) {
+                document.getElementById('currentPosition').textContent = 
+                    `${lastPosition.lat.toFixed(6)}, ${lastPosition.lng.toFixed(6)}`;
+            } else {
+                document.getElementById('currentPosition').textContent = 'N/A';
+            }
+            
+            const debugPanel = document.getElementById('gpsDebug');
+            if (!gpsEnabled) {
+                debugPanel.classList.add('error');
+            } else {
+                debugPanel.classList.remove('error');
+            }
+        }
+
+        function updateGPSStatus(status) {
+            console.log(`🛰️ GPS Status: ${status}`);
+            if (gpsDebugVisible) {
+                document.getElementById('gpsStatus').textContent = status;
+            }
+        }
+
+        function logMovement(message, isDetected = false) {
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = `${timestamp}: ${message}`;
+            
+            movementLog.unshift(entry);
+            if (movementLog.length > 50) {
+                movementLog = movementLog.slice(0, 50);
+            }
+            
+            if (gpsDebugVisible) {
+                const logElement = document.getElementById('movementLog');
+                logElement.innerHTML = '';
+                movementLog.slice(0, 8).forEach(logEntry => {
+                    const div = document.createElement('div');
+                    div.className = 'movement-entry';
+                    if (logEntry.includes('MOVIMIENTO')) {
+                        div.classList.add('detected');
+                    }
+                    div.textContent = logEntry;
+                    logElement.appendChild(div);
+                });
+            }
+        }
+
+        async function testGPS() {
+            showNotification('🧪 Probando GPS...', 'info');
+            logMovement('🧪 Test GPS iniciado...');
+            
+            try {
+                const position = await getCurrentPositionRobust();
+                const coords = `${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`;
+                const accuracy = position.coords.accuracy.toFixed(1);
+                
+                showNotification(`✅ GPS OK: Precisión ${accuracy}m`, 'success');
+                logMovement(`✅ Test GPS exitoso - Precisión: ${accuracy}m`);
+                console.log('🧪 Test GPS exitoso:', { coords, accuracy });
+                
+                if (!gpsDebugVisible) {
+                    toggleGPSDebug();
+                }
+                
+            } catch (error) {
+                showNotification(`❌ Test falló: ${error.message}`, 'error');
+                logMovement(`❌ Test GPS falló: ${error.message}`);
+                console.error('🧪 Test GPS falló:', error);
+            }
+        }
+
+        // === FUNCIONES DE NAVEGACIÓN ===
         function switchTab(tab) {
             document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -893,7 +1273,7 @@
             }
         }
 
-        // Funciones de almacenamiento
+        // === FUNCIONES DE ALMACENAMIENTO ===
         function saveToLocalStorage() {
             const todayKey = getTodayKey();
             if (!historyData[todayKey]) {
@@ -941,21 +1321,12 @@
                     
                     // Reiniciar GPS tracking si la jornada estaba activa
                     if (navigator.geolocation) {
-                        getCurrentPosition().then(position => {
+                        getCurrentPositionRobust().then(position => {
                             lastPosition = {
                                 lat: position.coords.latitude,
                                 lng: position.coords.longitude
                             };
-                            
-                            watchId = navigator.geolocation.watchPosition(
-                                updatePosition,
-                                (error) => console.warn('Error tracking position:', error),
-                                { 
-                                    enableHighAccuracy: true, 
-                                    maximumAge: 5000,
-                                    timeout: 10000
-                                }
-                            );
+                            startGPSTracking();
                         }).catch(() => {
                             showNotification('GPS no disponible para continuar tracking', 'warning');
                         });
@@ -971,82 +1342,7 @@
             return `${today.getFullYear()}-${(today.getMonth()+1).toString().padStart(2,'0')}-${today.getDate().toString().padStart(2,'0')}`;
         }
 
-        // Función para obtener la ubicación actual con mayor precisión y mejor manejo de errores
-        function getCurrentPosition() {
-            return new Promise((resolve, reject) => {
-                if (!navigator.geolocation) {
-                    reject(new Error('Geolocalización no soportada'));
-                    return;
-                }
-                
-                // Configuración específica para Telegram Web Apps
-                const options = {
-                    enableHighAccuracy: true,
-                    timeout: window.Telegram && window.Telegram.WebApp ? 15000 : 8000, // Más tiempo en Telegram
-                    maximumAge: window.Telegram && window.Telegram.WebApp ? 10000 : 3000  // Datos menos frescos en Telegram
-                };
-                
-                console.log('Solicitando ubicación con opciones:', options);
-                
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        console.log('Ubicación obtenida:', position.coords.latitude, position.coords.longitude);
-                        resolve(position);
-                    },
-                    (error) => {
-                        console.warn('Error obteniendo ubicación:', error.code, error.message);
-                        let errorMsg = 'Error de GPS: ';
-                        switch(error.code) {
-                            case error.PERMISSION_DENIED:
-                                errorMsg += 'Permisos denegados';
-                                break;
-                            case error.POSITION_UNAVAILABLE:
-                                errorMsg += 'Ubicación no disponible';
-                                break;
-                            case error.TIMEOUT:
-                                errorMsg += 'Tiempo agotado';
-                                break;
-                            default:
-                                errorMsg += 'Error desconocido';
-                        }
-                        reject(new Error(errorMsg));
-                    },
-                    options
-                );
-            });
-        }
-
-        // Función para calcular distancia entre dos puntos
-        function calculateDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371;
-            const dLat = (lat2 - lat1) * Math.PI / 180;
-            const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                    Math.sin(dLon/2) * Math.sin(dLon/2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-            return R * c;
-        }
-
-        // Función para formatear tiempo
-        function formatTime(date) {
-            return date.toLocaleTimeString('es-ES', { 
-                hour: '2-digit', 
-                minute: '2-digit' 
-            });
-        }
-
-        // Función para formatear duración
-        function formatDuration(minutes) {
-            const hours = Math.floor(minutes / 60);
-            const mins = minutes % 60;
-            if (hours > 0) {
-                return `${hours}h ${mins}m`;
-            }
-            return `${mins}m`;
-        }
-
-        // Iniciar/Finalizar jornada
+        // === FUNCIONES DE JORNADA ===
         function toggleShift() {
             if (!isShiftActive) {
                 startShift();
@@ -1057,7 +1353,7 @@
 
         async function startShift() {
             try {
-                const position = await getCurrentPosition();
+                const position = await getCurrentPositionRobust();
                 isShiftActive = true;
                 shiftStartTime = new Date();
                 lastPosition = {
@@ -1065,25 +1361,8 @@
                     lng: position.coords.longitude
                 };
 
-                // Configuración más precisa del GPS para tracking en tiempo real
                 if (navigator.geolocation) {
-                    const watchOptions = {
-                        enableHighAccuracy: true,
-                        maximumAge: window.Telegram && window.Telegram.WebApp ? 10000 : 5000,
-                        timeout: window.Telegram && window.Telegram.WebApp ? 15000 : 10000
-                    };
-                    
-                    watchId = navigator.geolocation.watchPosition(
-                        updatePosition,
-                        (error) => {
-                            console.warn('Error tracking position:', error);
-                            if (error.code === error.PERMISSION_DENIED) {
-                                showNotification('GPS bloqueado. Usa distancia manual.', 'warning');
-                                addManualTrackingOption();
-                            }
-                        },
-                        watchOptions
-                    );
+                    startGPSTracking();
                 }
 
                 updateShiftDisplay();
@@ -1092,6 +1371,7 @@
                 
                 saveToLocalStorage();
                 showNotification('¡Jornada iniciada! GPS activado para tracking', 'success');
+                logMovement('✅ Jornada iniciada con GPS');
             } catch (error) {
                 console.warn('Error en startShift:', error.message);
                 
@@ -1103,14 +1383,12 @@
                 document.getElementById('shiftBtn').className = 'btn danger';
                 saveToLocalStorage();
                 
-                // Mostrar opción manual
-                addManualTrackingOption();
-                
                 if (window.Telegram && window.Telegram.WebApp) {
                     showNotification('Jornada iniciada. GPS limitado en Telegram - usa distancia manual', 'warning');
                 } else {
                     showNotification('Jornada iniciada sin GPS. Usa distancia manual o permite ubicación', 'warning');
                 }
+                logMovement('⚠️ Jornada iniciada sin GPS');
             }
         }
 
@@ -1118,10 +1396,7 @@
             isShiftActive = false;
             shiftEndTime = new Date();
             
-            if (watchId) {
-                navigator.geolocation.clearWatch(watchId);
-                watchId = null;
-            }
+            stopGPSTracking();
 
             updateShiftDisplay();
             document.getElementById('shiftBtn').textContent = 'Iniciar Jornada';
@@ -1130,11 +1405,11 @@
             
             saveToLocalStorage();
             showNotification('Jornada finalizada. Puedes generar el reporte.', 'info');
+            logMovement(`🏁 Jornada finalizada - Total: ${totalDistance.toFixed(2)}km`);
         }
 
         function updateShiftDisplay() {
             const statusEl = document.getElementById('shiftStatus');
-            const indicatorEl = document.getElementById('statusIndicator');
             const startTimeEl = document.getElementById('startTime');
             const endTimeEl = document.getElementById('endTime');
 
@@ -1149,47 +1424,7 @@
             }
         }
 
-        // Actualizar posición - funciona durante toda la jornada con mejor manejo de errores
-        function updatePosition(position) {
-            if (!isShiftActive || !lastPosition) return;
-
-            try {
-                const newPosition = {
-                    lat: position.coords.latitude,
-                    lng: position.coords.longitude
-                };
-
-                const distance = calculateDistance(
-                    lastPosition.lat, lastPosition.lng,
-                    newPosition.lat, newPosition.lng
-                );
-
-                // Reducir el threshold para detectar movimiento más pequeño (5 metros en lugar de 10)
-                // En Telegram, usar threshold un poco más alto debido a menos precisión
-                const threshold = window.Telegram && window.Telegram.WebApp ? 0.008 : 0.005;
-                
-                if (distance > threshold) {
-                    // Agregar distancia al total siempre que la jornada esté activa
-                    totalDistance += distance;
-                    
-                    // Si hay una entrega activa, también agregar a esa entrega
-                    if (currentDelivery) {
-                        currentDelivery.distance += distance;
-                    }
-                    
-                    lastPosition = newPosition;
-                    updateStats();
-                    saveToLocalStorage();
-                    
-                    // Debug: mostrar en consola para verificar funcionamiento
-                    console.log(`GPS: +${(distance * 1000).toFixed(1)}m - Total: ${totalDistance.toFixed(2)}km`);
-                }
-            } catch (error) {
-                console.warn('Error en updatePosition:', error);
-            }
-        }
-
-        // Iniciar entrega - con nombre automático y mejor soporte para Telegram
+        // === FUNCIONES DE ENTREGA ===
         async function startDelivery() {
             if (!isShiftActive) {
                 showNotification('Debes iniciar la jornada primero', 'error');
@@ -1201,11 +1436,10 @@
                 return;
             }
 
-            // Generar nombre automático para la entrega
             const clientName = `Entrega #${deliveryCounter}`;
 
             try {
-                const position = await getCurrentPosition();
+                const position = await getCurrentPositionRobust();
                 
                 currentDelivery = {
                     id: Date.now(),
@@ -1234,6 +1468,7 @@
                 saveToLocalStorage();
                 
                 showNotification(`${clientName} iniciada con GPS`, 'success');
+                logMovement(`🚚 ${clientName} iniciada con GPS`);
             } catch (error) {
                 // Crear entrega sin GPS
                 currentDelivery = {
@@ -1257,13 +1492,10 @@
                     : `${clientName} iniciada sin GPS - permite ubicación o usa distancia manual`;
                     
                 showNotification(message, 'warning');
-                
-                // Asegurar que el botón manual esté disponible
-                addManualTrackingOption();
+                logMovement(`⚠️ ${clientName} iniciada sin GPS`);
             }
         }
 
-        // Completar entrega
         function openCompleteModal(deliveryId) {
             const delivery = deliveries.find(d => d.id === deliveryId);
             if (!delivery) return;
@@ -1292,10 +1524,27 @@
                 closeModal();
                 
                 showNotification(`Entrega completada: ${delivery.client}`, 'success');
+                logMovement(`✅ ${delivery.client} completada - ${delivery.distance.toFixed(2)}km`);
             }
         }
 
-        // Actualizar lista de entregas
+        // === FUNCIONES DE UI ===
+        function formatTime(date) {
+            return date.toLocaleTimeString('es-ES', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+        }
+
+        function formatDuration(minutes) {
+            const hours = Math.floor(minutes / 60);
+            const mins = minutes % 60;
+            if (hours > 0) {
+                return `${hours}h ${mins}m`;
+            }
+            return `${mins}m`;
+        }
+
         function updateDeliveryList() {
             const listEl = document.getElementById('deliveryList');
             
@@ -1344,7 +1593,6 @@
             }).join('');
         }
 
-        // Actualizar estadísticas
         function updateStats() {
             const completed = deliveries.filter(d => d.status === 'completed').length;
             
@@ -1353,7 +1601,7 @@
             document.getElementById('totalDistance').textContent = totalDistance.toFixed(1);
         }
 
-        // Historial
+        // === FUNCIONES DE HISTORIAL ===
         function updateCalendarView() {
             const year = currentHistoryDate.getFullYear();
             const month = currentHistoryDate.getMonth();
@@ -1462,12 +1710,11 @@
             historyDeliveriesEl.innerHTML = html;
         }
 
-        // Funciones de gestión
+        // === FUNCIONES DE GESTIÓN ===
         function showNewDayModal() {
             document.getElementById('newDayModal').style.display = 'block';
         }
 
-        // Funciones para distancia manual
         function showManualDistanceModal() {
             if (!isShiftActive) {
                 showNotification('Debes iniciar la jornada primero', 'error');
@@ -1499,6 +1746,7 @@
             }
             
             updateStats();
+            updateDeliveryList();
             saveToLocalStorage();
             
             // Limpiar input y cerrar modal
@@ -1506,6 +1754,7 @@
             closeModal();
             
             showNotification(`${distance} km agregados manualmente`, 'success');
+            logMovement(`📍 Distancia manual: ${distance}km`);
             console.log(`Distancia manual agregada: ${distance}km - Total: ${totalDistance.toFixed(2)}km`);
         }
 
@@ -1524,10 +1773,7 @@
             deliveryCounter = 1;
             
             // Stop GPS tracking
-            if (watchId) {
-                navigator.geolocation.clearWatch(watchId);
-                watchId = null;
-            }
+            stopGPSTracking();
             
             // Update UI
             document.getElementById('shiftBtn').textContent = 'Iniciar Jornada';
@@ -1539,9 +1785,10 @@
             
             closeModal();
             showNotification('¡Nuevo día iniciado!', 'success');
+            logMovement('🔄 Nuevo día iniciado');
         }
 
-        // Export/Import
+        // === EXPORT/IMPORT ===
         function exportData() {
             showPasswordModal('export');
         }
@@ -1639,7 +1886,7 @@
             reader.readAsText(file);
         }
 
-        // Delete functions
+        // === DELETE FUNCTIONS ===
         function showDeleteModal(type) {
             deleteType = type;
             const modal = document.getElementById('deleteModal');
@@ -1739,14 +1986,14 @@
             }
         }
 
-        // Modal functions
+        // === MODAL FUNCTIONS ===
         function closeModal() {
             document.querySelectorAll('.modal').forEach(modal => {
                 modal.style.display = 'none';
             });
         }
 
-        // Notifications
+        // === NOTIFICATIONS ===
         function showNotification(message, type = 'info') {
             const notification = document.createElement('div');
             notification.className = 'notification';
@@ -1765,7 +2012,7 @@
             }, 3000);
         }
 
-        // Generate PDF
+        // === GENERATE PDF ===
         function generatePDF() {
             if (deliveries.length === 0) {
                 showNotification('No hay entregas para exportar', 'error');
@@ -1859,7 +2106,7 @@
             showNotification('Reporte PDF generado exitosamente', 'success');
         }
 
-        // Event listeners
+        // === EVENT LISTENERS ===
         document.querySelectorAll('.modal').forEach(modal => {
             modal.addEventListener('click', function(e) {
                 if (e.target === this) {
