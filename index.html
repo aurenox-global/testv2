@@ -625,10 +625,6 @@
 
             <!-- Controls -->
             <div class="controls">
-                <div class="input-group">
-                    <label for="clientName">Nombre del Cliente</label>
-                    <input type="text" id="clientName" placeholder="Ej: Juan Pérez">
-                </div>
                 <button class="btn success" onclick="startDelivery()">Iniciar Entrega</button>
             </div>
 
@@ -777,6 +773,7 @@
         let historyData = {};
         let currentHistoryDate = new Date();
         let deleteType = '';
+        let deliveryCounter = 1;
 
         // Cargar datos al iniciar
         document.addEventListener('DOMContentLoaded', function() {
@@ -816,7 +813,8 @@
                     deliveries: [],
                     shiftStartTime: null,
                     shiftEndTime: null,
-                    totalDistance: 0
+                    totalDistance: 0,
+                    deliveryCounter: 1
                 };
             }
             
@@ -824,7 +822,8 @@
                 deliveries: deliveries,
                 shiftStartTime: shiftStartTime,
                 shiftEndTime: shiftEndTime,
-                totalDistance: totalDistance
+                totalDistance: totalDistance,
+                deliveryCounter: deliveryCounter
             };
             
             localStorage.setItem('deliveryHistory', JSON.stringify(historyData));
@@ -845,11 +844,34 @@
                 shiftStartTime = todayData.shiftStartTime ? new Date(todayData.shiftStartTime) : null;
                 shiftEndTime = todayData.shiftEndTime ? new Date(todayData.shiftEndTime) : null;
                 totalDistance = todayData.totalDistance || 0;
+                deliveryCounter = todayData.deliveryCounter || (deliveries.length + 1);
                 
                 if (shiftStartTime && !shiftEndTime) {
                     isShiftActive = true;
                     document.getElementById('shiftBtn').textContent = 'Finalizar Jornada';
                     document.getElementById('shiftBtn').className = 'btn danger';
+                    
+                    // Reiniciar GPS tracking si la jornada estaba activa
+                    if (navigator.geolocation) {
+                        getCurrentPosition().then(position => {
+                            lastPosition = {
+                                lat: position.coords.latitude,
+                                lng: position.coords.longitude
+                            };
+                            
+                            watchId = navigator.geolocation.watchPosition(
+                                updatePosition,
+                                (error) => console.warn('Error tracking position:', error),
+                                { 
+                                    enableHighAccuracy: true, 
+                                    maximumAge: 5000,
+                                    timeout: 10000
+                                }
+                            );
+                        }).catch(() => {
+                            showNotification('GPS no disponible para continuar tracking', 'warning');
+                        });
+                    }
                 }
                 
                 updateShiftDisplay();
@@ -861,7 +883,7 @@
             return `${today.getFullYear()}-${(today.getMonth()+1).toString().padStart(2,'0')}-${today.getDate().toString().padStart(2,'0')}`;
         }
 
-        // Función para obtener la ubicación actual
+        // Función para obtener la ubicación actual con mayor precisión
         function getCurrentPosition() {
             return new Promise((resolve, reject) => {
                 if (!navigator.geolocation) {
@@ -871,8 +893,8 @@
                 
                 navigator.geolocation.getCurrentPosition(resolve, reject, {
                     enableHighAccuracy: true,
-                    timeout: 10000,
-                    maximumAge: 60000
+                    timeout: 8000,
+                    maximumAge: 3000  // Datos más frescos
                 });
             });
         }
@@ -926,11 +948,16 @@
                     lng: position.coords.longitude
                 };
 
+                // Configuración más precisa del GPS para tracking en tiempo real
                 if (navigator.geolocation) {
                     watchId = navigator.geolocation.watchPosition(
                         updatePosition,
                         (error) => console.warn('Error tracking position:', error),
-                        { enableHighAccuracy: true, maximumAge: 30000, timeout: 15000 }
+                        { 
+                            enableHighAccuracy: true, 
+                            maximumAge: 5000,  // Datos más frescos
+                            timeout: 10000     // Timeout más corto
+                        }
                     );
                 }
 
@@ -939,7 +966,7 @@
                 document.getElementById('shiftBtn').className = 'btn danger';
                 
                 saveToLocalStorage();
-                showNotification('¡Jornada iniciada! GPS activado', 'success');
+                showNotification('¡Jornada iniciada! GPS activado para tracking', 'success');
             } catch (error) {
                 showNotification('Error al acceder a GPS. Funcionalidad limitada.', 'warning');
                 isShiftActive = true;
@@ -986,40 +1013,43 @@
             }
         }
 
-        // Actualizar posición
+        // Actualizar posición - funciona durante toda la jornada
         function updatePosition(position) {
-            if (currentDelivery && lastPosition) {
-                const newPosition = {
-                    lat: position.coords.latitude,
-                    lng: position.coords.longitude
-                };
+            if (!isShiftActive || !lastPosition) return;
 
-                const distance = calculateDistance(
-                    lastPosition.lat, lastPosition.lng,
-                    newPosition.lat, newPosition.lng
-                );
+            const newPosition = {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude
+            };
 
-                if (distance > 0.01) {
+            const distance = calculateDistance(
+                lastPosition.lat, lastPosition.lng,
+                newPosition.lat, newPosition.lng
+            );
+
+            // Reducir el threshold para detectar movimiento más pequeño (5 metros en lugar de 10)
+            if (distance > 0.005) {
+                // Agregar distancia al total siempre que la jornada esté activa
+                totalDistance += distance;
+                
+                // Si hay una entrega activa, también agregar a esa entrega
+                if (currentDelivery) {
                     currentDelivery.distance += distance;
-                    totalDistance += distance;
-                    lastPosition = newPosition;
-                    updateStats();
-                    saveToLocalStorage();
                 }
+                
+                lastPosition = newPosition;
+                updateStats();
+                saveToLocalStorage();
+                
+                // Debug: mostrar en consola para verificar funcionamiento
+                console.log(`Distancia agregada: ${(distance * 1000).toFixed(1)}m - Total: ${totalDistance.toFixed(2)}km`);
             }
         }
 
-        // Iniciar entrega
+        // Iniciar entrega - con nombre automático
         async function startDelivery() {
-            const clientName = document.getElementById('clientName').value.trim();
-            
             if (!isShiftActive) {
                 showNotification('Debes iniciar la jornada primero', 'error');
-                return;
-            }
-
-            if (!clientName) {
-                showNotification('Ingresa el nombre del cliente', 'error');
                 return;
             }
 
@@ -1027,6 +1057,9 @@
                 showNotification('Ya tienes una entrega en progreso', 'error');
                 return;
             }
+
+            // Generar nombre automático para la entrega
+            const clientName = `Entrega #${deliveryCounter}`;
 
             try {
                 const position = await getCurrentPosition();
@@ -1044,18 +1077,20 @@
                     }
                 };
 
+                // Actualizar posición para tracking preciso
                 lastPosition = {
                     lat: position.coords.latitude,
                     lng: position.coords.longitude
                 };
 
                 deliveries.push(currentDelivery);
-                document.getElementById('clientName').value = '';
+                deliveryCounter++;
+                
                 updateDeliveryList();
                 updateStats();
                 saveToLocalStorage();
                 
-                showNotification(`Entrega iniciada para ${clientName}`, 'success');
+                showNotification(`${clientName} iniciada`, 'success');
             } catch (error) {
                 currentDelivery = {
                     id: Date.now(),
@@ -1067,12 +1102,13 @@
                 };
 
                 deliveries.push(currentDelivery);
-                document.getElementById('clientName').value = '';
+                deliveryCounter++;
+                
                 updateDeliveryList();
                 updateStats();
                 saveToLocalStorage();
                 
-                showNotification(`Entrega iniciada para ${clientName} (sin GPS)`, 'warning');
+                showNotification(`${clientName} iniciada (sin GPS preciso)`, 'warning');
             }
         }
 
@@ -1104,7 +1140,7 @@
                 saveToLocalStorage();
                 closeModal();
                 
-                showNotification(`Entrega completada para ${delivery.client}`, 'success');
+                showNotification(`Entrega completada: ${delivery.client}`, 'success');
             }
         }
 
@@ -1292,6 +1328,13 @@
             deliveries = [];
             currentDelivery = null;
             totalDistance = 0;
+            deliveryCounter = 1;
+            
+            // Stop GPS tracking
+            if (watchId) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+            }
             
             // Update UI
             document.getElementById('shiftBtn').textContent = 'Iniciar Jornada';
@@ -1487,6 +1530,7 @@
                         totalDistance = 0;
                         isShiftActive = false;
                         currentDelivery = null;
+                        deliveryCounter = 1;
                     }
                     break;
             }
@@ -1623,12 +1667,6 @@
         }
 
         // Event listeners
-        document.getElementById('clientName').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                startDelivery();
-            }
-        });
-
         document.querySelectorAll('.modal').forEach(modal => {
             modal.addEventListener('click', function(e) {
                 if (e.target === this) {
@@ -1646,4 +1684,4 @@
     </script>
 </body>
 </html>
-                
+         
