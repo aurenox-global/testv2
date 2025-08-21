@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+    <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -760,6 +760,22 @@
         </div>
     </div>
 
+    <!-- Modal for manual distance -->
+    <div class="modal" id="manualDistanceModal">
+        <div class="modal-content">
+            <h3>📍 Agregar Distancia Manual</h3>
+            <p style="text-align: center; color: #666; margin-bottom: 24px;">
+                Ingresa la distancia recorrida manualmente
+            </p>
+            <div class="input-group">
+                <label for="manualDistance">Distancia (km)</label>
+                <input type="number" id="manualDistance" placeholder="Ej: 2.5" step="0.1" min="0">
+            </div>
+            <button class="btn success" onclick="addManualDistance()">Agregar Distancia</button>
+            <button class="btn secondary" onclick="closeModal()">Cancelar</button>
+        </div>
+    </div>
+
     <script>
         // Variables globales
         let isShiftActive = false;
@@ -783,14 +799,86 @@
             updateDeliveryList();
             updateCalendarView();
             
+            // Detectar si estamos en Telegram
+            initializeTelegramSupport();
+            
             // Solicitar permisos de geolocalización
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    () => showNotification('GPS listo para usar', 'success'),
-                    () => showNotification('GPS no disponible. Funcionalidad limitada.', 'warning')
-                );
-            }
+            requestLocationPermission();
         });
+
+        // Función para inicializar soporte de Telegram
+        function initializeTelegramSupport() {
+            // Verificar si estamos en Telegram Web App
+            if (window.Telegram && window.Telegram.WebApp) {
+                console.log('Ejecutándose en Telegram Web App');
+                
+                // Expandir la aplicación
+                window.Telegram.WebApp.expand();
+                
+                // Habilitar el botón de cierre
+                window.Telegram.WebApp.enableClosingConfirmation();
+                
+                // Configurar tema
+                document.body.style.backgroundColor = window.Telegram.WebApp.backgroundColor;
+                
+                showNotification('App iniciada en Telegram', 'info');
+            }
+        }
+
+        // Función mejorada para solicitar permisos de ubicación
+        async function requestLocationPermission() {
+            try {
+                // Verificar si la geolocalización está disponible
+                if (!navigator.geolocation) {
+                    throw new Error('Geolocalización no soportada');
+                }
+
+                // Primero intentar obtener permisos
+                if (navigator.permissions) {
+                    const permission = await navigator.permissions.query({name: 'geolocation'});
+                    console.log('Permiso de ubicación:', permission.state);
+                    
+                    if (permission.state === 'denied') {
+                        showLocationHelp();
+                        return;
+                    }
+                }
+
+                // Intentar obtener ubicación con timeout corto
+                const position = await getCurrentPosition();
+                showNotification('GPS activado correctamente', 'success');
+                
+            } catch (error) {
+                console.warn('Error GPS:', error.message);
+                showLocationHelp();
+            }
+        }
+
+        // Función para mostrar ayuda de ubicación
+        function showLocationHelp() {
+            const helpMessage = window.Telegram && window.Telegram.WebApp 
+                ? 'GPS limitado en Telegram. Para mejor precisión:\n• Abre en navegador\n• O habilita ubicación manualmente'
+                : 'Para usar GPS:\n• Permite ubicación en el navegador\n• Verifica permisos del sitio';
+                
+            showNotification(helpMessage, 'warning');
+            
+            // Agregar botón para tracking manual si es necesario
+            addManualTrackingOption();
+        }
+
+        // Función para agregar opción de tracking manual
+        function addManualTrackingOption() {
+            const controls = document.querySelector('.controls');
+            if (!document.getElementById('manualTrackingBtn') && controls) {
+                const manualBtn = document.createElement('button');
+                manualBtn.id = 'manualTrackingBtn';
+                manualBtn.className = 'btn secondary';
+                manualBtn.style.marginTop = '10px';
+                manualBtn.innerHTML = '📍 Agregar Distancia Manual';
+                manualBtn.onclick = showManualDistanceModal;
+                controls.appendChild(manualBtn);
+            }
+        }
 
         // Funciones de navegación
         function switchTab(tab) {
@@ -883,7 +971,7 @@
             return `${today.getFullYear()}-${(today.getMonth()+1).toString().padStart(2,'0')}-${today.getDate().toString().padStart(2,'0')}`;
         }
 
-        // Función para obtener la ubicación actual con mayor precisión
+        // Función para obtener la ubicación actual con mayor precisión y mejor manejo de errores
         function getCurrentPosition() {
             return new Promise((resolve, reject) => {
                 if (!navigator.geolocation) {
@@ -891,11 +979,40 @@
                     return;
                 }
                 
-                navigator.geolocation.getCurrentPosition(resolve, reject, {
+                // Configuración específica para Telegram Web Apps
+                const options = {
                     enableHighAccuracy: true,
-                    timeout: 8000,
-                    maximumAge: 3000  // Datos más frescos
-                });
+                    timeout: window.Telegram && window.Telegram.WebApp ? 15000 : 8000, // Más tiempo en Telegram
+                    maximumAge: window.Telegram && window.Telegram.WebApp ? 10000 : 3000  // Datos menos frescos en Telegram
+                };
+                
+                console.log('Solicitando ubicación con opciones:', options);
+                
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        console.log('Ubicación obtenida:', position.coords.latitude, position.coords.longitude);
+                        resolve(position);
+                    },
+                    (error) => {
+                        console.warn('Error obteniendo ubicación:', error.code, error.message);
+                        let errorMsg = 'Error de GPS: ';
+                        switch(error.code) {
+                            case error.PERMISSION_DENIED:
+                                errorMsg += 'Permisos denegados';
+                                break;
+                            case error.POSITION_UNAVAILABLE:
+                                errorMsg += 'Ubicación no disponible';
+                                break;
+                            case error.TIMEOUT:
+                                errorMsg += 'Tiempo agotado';
+                                break;
+                            default:
+                                errorMsg += 'Error desconocido';
+                        }
+                        reject(new Error(errorMsg));
+                    },
+                    options
+                );
             });
         }
 
@@ -950,14 +1067,22 @@
 
                 // Configuración más precisa del GPS para tracking en tiempo real
                 if (navigator.geolocation) {
+                    const watchOptions = {
+                        enableHighAccuracy: true,
+                        maximumAge: window.Telegram && window.Telegram.WebApp ? 10000 : 5000,
+                        timeout: window.Telegram && window.Telegram.WebApp ? 15000 : 10000
+                    };
+                    
                     watchId = navigator.geolocation.watchPosition(
                         updatePosition,
-                        (error) => console.warn('Error tracking position:', error),
-                        { 
-                            enableHighAccuracy: true, 
-                            maximumAge: 5000,  // Datos más frescos
-                            timeout: 10000     // Timeout más corto
-                        }
+                        (error) => {
+                            console.warn('Error tracking position:', error);
+                            if (error.code === error.PERMISSION_DENIED) {
+                                showNotification('GPS bloqueado. Usa distancia manual.', 'warning');
+                                addManualTrackingOption();
+                            }
+                        },
+                        watchOptions
                     );
                 }
 
@@ -968,13 +1093,24 @@
                 saveToLocalStorage();
                 showNotification('¡Jornada iniciada! GPS activado para tracking', 'success');
             } catch (error) {
-                showNotification('Error al acceder a GPS. Funcionalidad limitada.', 'warning');
+                console.warn('Error en startShift:', error.message);
+                
+                // Iniciar jornada sin GPS
                 isShiftActive = true;
                 shiftStartTime = new Date();
                 updateShiftDisplay();
                 document.getElementById('shiftBtn').textContent = 'Finalizar Jornada';
                 document.getElementById('shiftBtn').className = 'btn danger';
                 saveToLocalStorage();
+                
+                // Mostrar opción manual
+                addManualTrackingOption();
+                
+                if (window.Telegram && window.Telegram.WebApp) {
+                    showNotification('Jornada iniciada. GPS limitado en Telegram - usa distancia manual', 'warning');
+                } else {
+                    showNotification('Jornada iniciada sin GPS. Usa distancia manual o permite ubicación', 'warning');
+                }
             }
         }
 
@@ -1013,40 +1149,47 @@
             }
         }
 
-        // Actualizar posición - funciona durante toda la jornada
+        // Actualizar posición - funciona durante toda la jornada con mejor manejo de errores
         function updatePosition(position) {
             if (!isShiftActive || !lastPosition) return;
 
-            const newPosition = {
-                lat: position.coords.latitude,
-                lng: position.coords.longitude
-            };
+            try {
+                const newPosition = {
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude
+                };
 
-            const distance = calculateDistance(
-                lastPosition.lat, lastPosition.lng,
-                newPosition.lat, newPosition.lng
-            );
+                const distance = calculateDistance(
+                    lastPosition.lat, lastPosition.lng,
+                    newPosition.lat, newPosition.lng
+                );
 
-            // Reducir el threshold para detectar movimiento más pequeño (5 metros en lugar de 10)
-            if (distance > 0.005) {
-                // Agregar distancia al total siempre que la jornada esté activa
-                totalDistance += distance;
+                // Reducir el threshold para detectar movimiento más pequeño (5 metros en lugar de 10)
+                // En Telegram, usar threshold un poco más alto debido a menos precisión
+                const threshold = window.Telegram && window.Telegram.WebApp ? 0.008 : 0.005;
                 
-                // Si hay una entrega activa, también agregar a esa entrega
-                if (currentDelivery) {
-                    currentDelivery.distance += distance;
+                if (distance > threshold) {
+                    // Agregar distancia al total siempre que la jornada esté activa
+                    totalDistance += distance;
+                    
+                    // Si hay una entrega activa, también agregar a esa entrega
+                    if (currentDelivery) {
+                        currentDelivery.distance += distance;
+                    }
+                    
+                    lastPosition = newPosition;
+                    updateStats();
+                    saveToLocalStorage();
+                    
+                    // Debug: mostrar en consola para verificar funcionamiento
+                    console.log(`GPS: +${(distance * 1000).toFixed(1)}m - Total: ${totalDistance.toFixed(2)}km`);
                 }
-                
-                lastPosition = newPosition;
-                updateStats();
-                saveToLocalStorage();
-                
-                // Debug: mostrar en consola para verificar funcionamiento
-                console.log(`Distancia agregada: ${(distance * 1000).toFixed(1)}m - Total: ${totalDistance.toFixed(2)}km`);
+            } catch (error) {
+                console.warn('Error en updatePosition:', error);
             }
         }
 
-        // Iniciar entrega - con nombre automático
+        // Iniciar entrega - con nombre automático y mejor soporte para Telegram
         async function startDelivery() {
             if (!isShiftActive) {
                 showNotification('Debes iniciar la jornada primero', 'error');
@@ -1090,8 +1233,9 @@
                 updateStats();
                 saveToLocalStorage();
                 
-                showNotification(`${clientName} iniciada`, 'success');
+                showNotification(`${clientName} iniciada con GPS`, 'success');
             } catch (error) {
+                // Crear entrega sin GPS
                 currentDelivery = {
                     id: Date.now(),
                     client: clientName,
@@ -1108,7 +1252,14 @@
                 updateStats();
                 saveToLocalStorage();
                 
-                showNotification(`${clientName} iniciada (sin GPS preciso)`, 'warning');
+                const message = window.Telegram && window.Telegram.WebApp 
+                    ? `${clientName} iniciada - usa distancia manual`
+                    : `${clientName} iniciada sin GPS - permite ubicación o usa distancia manual`;
+                    
+                showNotification(message, 'warning');
+                
+                // Asegurar que el botón manual esté disponible
+                addManualTrackingOption();
             }
         }
 
@@ -1314,6 +1465,48 @@
         // Funciones de gestión
         function showNewDayModal() {
             document.getElementById('newDayModal').style.display = 'block';
+        }
+
+        // Funciones para distancia manual
+        function showManualDistanceModal() {
+            if (!isShiftActive) {
+                showNotification('Debes iniciar la jornada primero', 'error');
+                return;
+            }
+            document.getElementById('manualDistanceModal').style.display = 'block';
+        }
+
+        function addManualDistance() {
+            const distanceInput = document.getElementById('manualDistance');
+            const distance = parseFloat(distanceInput.value);
+            
+            if (!distance || distance <= 0) {
+                showNotification('Ingresa una distancia válida', 'error');
+                return;
+            }
+            
+            if (!isShiftActive) {
+                showNotification('Debes iniciar la jornada primero', 'error');
+                return;
+            }
+            
+            // Agregar distancia al total
+            totalDistance += distance;
+            
+            // Si hay una entrega activa, también agregar a esa entrega
+            if (currentDelivery) {
+                currentDelivery.distance += distance;
+            }
+            
+            updateStats();
+            saveToLocalStorage();
+            
+            // Limpiar input y cerrar modal
+            distanceInput.value = '';
+            closeModal();
+            
+            showNotification(`${distance} km agregados manualmente`, 'success');
+            console.log(`Distancia manual agregada: ${distance}km - Total: ${totalDistance.toFixed(2)}km`);
         }
 
         function startNewDay() {
@@ -1684,4 +1877,3 @@
     </script>
 </body>
 </html>
-         
