@@ -20,6 +20,170 @@
             overflow-x: hidden;
         }
 
+        /* === ESTILOS DE LOGIN === */
+        .login-screen {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .login-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 16px 64px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            text-align: center;
+        }
+
+        .login-logo {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .login-title {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+
+        .login-subtitle {
+            color: #666;
+            margin-bottom: 32px;
+            font-size: 16px;
+        }
+
+        .license-input-group {
+            margin-bottom: 24px;
+            text-align: left;
+        }
+
+        .license-input-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 8px;
+        }
+
+        .license-input {
+            width: 100%;
+            padding: 16px;
+            border: 2px solid rgba(102, 126, 234, 0.2);
+            border-radius: 12px;
+            font-size: 16px;
+            background: rgba(255, 255, 255, 0.8);
+            transition: all 0.3s ease;
+            text-align: center;
+            font-family: monospace;
+            letter-spacing: 1px;
+        }
+
+        .license-input:focus {
+            outline: none;
+            border-color: #667eea;
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+
+        .login-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: none;
+            border-radius: 12px;
+            padding: 16px 32px;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+        }
+
+        .login-btn:active {
+            transform: translateY(0);
+        }
+
+        .login-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .license-error {
+            color: #f44336;
+            font-size: 14px;
+            margin-top: 8px;
+            text-align: center;
+        }
+
+        .license-info {
+            background: rgba(102, 126, 234, 0.1);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 24px;
+            font-size: 14px;
+            color: #555;
+            text-align: left;
+        }
+
+        .ip-info-box {
+            background: rgba(0, 210, 211, 0.1);
+            border: 1px solid rgba(0, 210, 211, 0.3);
+            border-radius: 12px;
+            padding: 12px;
+            margin: 16px 0;
+            font-size: 13px;
+            color: #555;
+            text-align: left;
+        }
+
+        .ip-display {
+            font-family: monospace;
+            font-weight: bold;
+            color: #667eea;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 4px 8px;
+            border-radius: 6px;
+            display: inline-block;
+        }
+
+        .logout-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid #ff6b6b;
+            border-radius: 8px;
+            padding: 8px 16px;
+            color: #ff6b6b;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .logout-btn:hover {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        /* === RESTO DE ESTILOS ORIGINALES === */
         .container {
             max-width: 414px;
             margin: 0 auto;
@@ -593,6 +757,14 @@
             display: none !important;
         }
 
+        .main-app {
+            display: none;
+        }
+
+        .main-app.active {
+            display: block;
+        }
+
         @media (max-width: 480px) {
             .container {
                 padding: 16px;
@@ -609,6 +781,10 @@
             
             .btn-group {
                 grid-template-columns: 1fr;
+            }
+
+            .login-container {
+                padding: 24px;
             }
         }
 
@@ -634,257 +810,764 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <h1>📦 Delivery Tracker Pro</h1>
-            <div class="stats-grid">
-                <div class="status-card">
-                    <div class="number" id="totalPackages">0</div>
-                    <div class="label">Paquetes</div>
-                </div>
-                <div class="status-card">
-                    <div class="number" id="deliveredPackages">0</div>
-                    <div class="label">Entregados</div>
-                </div>
-                <div class="status-card">
-                    <div class="number" id="totalDistance">0</div>
-                    <div class="label">km</div>
-                </div>
+    <!-- Pantalla de Login -->
+    <div id="loginScreen" class="login-screen">
+        <div class="login-container">
+            <div class="login-logo">📦</div>
+            <h1 class="login-title">Delivery Tracker Pro</h1>
+            <p class="login-subtitle">Ingrese su licencia para continuar</p>
+            
+            <!-- Información de IP del usuario -->
+            <div class="ip-info-box" id="userIpInfo" style="display: none;">
+                <strong>🌐 Tu IP detectada:</strong><br>
+                <span class="ip-display" id="detectedIp">Detectando...</span>
+            </div>
+            
+            <div class="license-input-group">
+                <label for="licenseInput">Código de Licencia</label>
+                <input 
+                    type="text" 
+                    id="licenseInput" 
+                    class="license-input" 
+                    placeholder="XXXX-XXXX-XXXX-XXXX"
+                    maxlength="19"
+                >
+                <div id="licenseError" class="license-error" style="display: none;"></div>
+            </div>
+            
+            <button id="loginBtn" class="login-btn" onclick="validateLicense()">
+                Ingresar
+            </button>
+            
+            <div class="license-info">
+                <strong>💡 Información:</strong><br>
+                • Este tracker acepta licencias estándar y licencias por IP<br>
+                • Las licencias por IP están vinculadas a tu dispositivo<br>
+                • Contacta al administrador para obtener una licencia<br>
+                • La licencia se guarda automáticamente una vez validada
             </div>
         </div>
+    </div>
 
-        <!-- GPS Debug Panel (oculto por defecto) -->
-        <div id="gpsDebug" class="gps-debug hidden">
-            <h4>🛰️ Debug GPS</h4>
-            
-            <div class="gps-debug-item">
-                <span class="gps-debug-label">Estado:</span>
-                <span class="gps-debug-value" id="gpsStatus">Inicializando...</span>
-            </div>
-            
-            <div class="gps-debug-item">
-                <span class="gps-debug-label">Tracking:</span>
-                <span class="gps-debug-value" id="trackingActive">No</span>
-            </div>
-            
-            <div class="gps-debug-item">
-                <span class="gps-debug-label">Última actualización:</span>
-                <span class="gps-debug-value" id="lastUpdate">Nunca</span>
-            </div>
-            
-            <div class="gps-debug-item">
-                <span class="gps-debug-label">Precisión:</span>
-                <span class="gps-debug-value" id="currentAccuracy">N/A</span>
-            </div>
-            
-            <div class="gps-debug-item">
-                <span class="gps-debug-label">Posición:</span>
-                <span class="gps-debug-value" id="currentPosition">N/A</span>
-            </div>
-            
-            <div class="gps-debug-item">
-                <span class="gps-debug-label">Último movimiento:</span>
-                <span class="gps-debug-value" id="lastMovement">0 metros</span>
-            </div>
-            
-            <div class="movement-log" id="movementLog">
-                <div class="movement-entry">Log de movimientos...</div>
-            </div>
-        </div>
+    <!-- Aplicación Principal -->
+    <div id="mainApp" class="main-app">
+        <!-- Botón de Logout -->
+        <button class="logout-btn" onclick="logout()">🚪 Salir</button>
 
-        <!-- Navigation Tabs -->
-        <div class="nav-tabs">
-            <button class="nav-tab active" onclick="switchTab('today')">Hoy</button>
-            <button class="nav-tab" onclick="switchTab('history')">Historial</button>
-            <button class="nav-tab" onclick="switchTab('settings')">Ajustes</button>
-        </div>
-
-        <!-- Tab Content: Today -->
-        <div id="todayTab" class="tab-content active">
-            <!-- Shift Info -->
-            <div class="shift-info">
-                <div class="shift-time">
-                    <span>Estado:</span>
-                    <span class="time-display" id="shiftStatus">
-                        Sin iniciar
-                        <span class="not-working-indicator" id="statusIndicator"></span>
-                    </span>
+        <div class="container">
+            <!-- Header -->
+            <div class="header">
+                <h1>📦 Delivery Tracker Pro</h1>
+                <div class="stats-grid">
+                    <div class="status-card">
+                        <div class="number" id="totalPackages">0</div>
+                        <div class="label">Paquetes</div>
+                    </div>
+                    <div class="status-card">
+                        <div class="number" id="deliveredPackages">0</div>
+                        <div class="label">Entregados</div>
+                    </div>
+                    <div class="status-card">
+                        <div class="number" id="totalDistance">0</div>
+                        <div class="label">km</div>
+                    </div>
                 </div>
-                <div class="shift-time">
-                    <span>Inicio:</span>
-                    <span class="time-display" id="startTime">--:--</span>
-                </div>
-                <div class="shift-time">
-                    <span>Fin:</span>
-                    <span class="time-display" id="endTime">--:--</span>
-                </div>
-                <button class="btn" id="shiftBtn" onclick="toggleShift()">Iniciar Jornada</button>
             </div>
 
-            <!-- Controls -->
-            <div class="controls">
-                <button class="btn success" onclick="startDelivery()">Iniciar Entrega</button>
+            <!-- GPS Debug Panel (oculto por defecto) -->
+            <div id="gpsDebug" class="gps-debug hidden">
+                <h4>🛰️ Debug GPS</h4>
+                
+                <div class="gps-debug-item">
+                    <span class="gps-debug-label">Estado:</span>
+                    <span class="gps-debug-value" id="gpsStatus">Inicializando...</span>
+                </div>
+                
+                <div class="gps-debug-item">
+                    <span class="gps-debug-label">Tracking:</span>
+                    <span class="gps-debug-value" id="trackingActive">No</span>
+                </div>
+                
+                <div class="gps-debug-item">
+                    <span class="gps-debug-label">Última actualización:</span>
+                    <span class="gps-debug-value" id="lastUpdate">Nunca</span>
+                </div>
+                
+                <div class="gps-debug-item">
+                    <span class="gps-debug-label">Precisión:</span>
+                    <span class="gps-debug-value" id="currentAccuracy">N/A</span>
+                </div>
+                
+                <div class="gps-debug-item">
+                    <span class="gps-debug-label">Posición:</span>
+                    <span class="gps-debug-value" id="currentPosition">N/A</span>
+                </div>
+                
+                <div class="gps-debug-item">
+                    <span class="gps-debug-label">Último movimiento:</span>
+                    <span class="gps-debug-value" id="lastMovement">0 metros</span>
+                </div>
+                
+                <div class="movement-log" id="movementLog">
+                    <div class="movement-entry">Log de movimientos...</div>
+                </div>
+            </div>
+
+            <!-- Navigation Tabs -->
+            <div class="nav-tabs">
+                <button class="nav-tab active" onclick="switchTab('today')">Hoy</button>
+                <button class="nav-tab" onclick="switchTab('history')">Historial</button>
+                <button class="nav-tab" onclick="switchTab('settings')">Ajustes</button>
+            </div>
+
+            <!-- Tab Content: Today -->
+            <div id="todayTab" class="tab-content active">
+                <!-- Shift Info -->
+                <div class="shift-info">
+                    <div class="shift-time">
+                        <span>Estado:</span>
+                        <span class="time-display" id="shiftStatus">
+                            Sin iniciar
+                            <span class="not-working-indicator" id="statusIndicator"></span>
+                        </span>
+                    </div>
+                    <div class="shift-time">
+                        <span>Inicio:</span>
+                        <span class="time-display" id="startTime">--:--</span>
+                    </div>
+                    <div class="shift-time">
+                        <span>Fin:</span>
+                        <span class="time-display" id="endTime">--:--</span>
+                    </div>
+                    <button class="btn" id="shiftBtn" onclick="toggleShift()">Iniciar Jornada</button>
+                </div>
+
+                <!-- Controls -->
+                <div class="controls">
+                    <button class="btn success" onclick="startDelivery()">Iniciar Entrega</button>
+                    <div class="btn-group">
+                        <button class="btn secondary" onclick="toggleGPSDebug()">🛰️ Debug GPS</button>
+                        <button class="btn secondary" onclick="testGPS()">🧪 Test GPS</button>
+                    </div>
+                    <button class="btn warning" onclick="showManualDistanceModal()" id="manualTrackingBtn">📍 Distancia Manual</button>
+                </div>
+
+                <!-- Delivery List -->
+                <div class="delivery-list">
+                    <h3 style="margin-bottom: 16px; color: #333; font-weight: 600;">Entregas de Hoy</h3>
+                    <div id="deliveryList">
+                        <p style="text-align: center; color: #999; font-style: italic;">No hay entregas registradas</p>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
                 <div class="btn-group">
-                    <button class="btn secondary" onclick="toggleGPSDebug()">🛰️ Debug GPS</button>
-                    <button class="btn secondary" onclick="testGPS()">🧪 Test GPS</button>
-                </div>
-                <button class="btn warning" onclick="showManualDistanceModal()" id="manualTrackingBtn">📍 Distancia Manual</button>
-            </div>
-
-            <!-- Delivery List -->
-            <div class="delivery-list">
-                <h3 style="margin-bottom: 16px; color: #333; font-weight: 600;">Entregas de Hoy</h3>
-                <div id="deliveryList">
-                    <p style="text-align: center; color: #999; font-style: italic;">No hay entregas registradas</p>
+                    <button class="btn secondary" onclick="generatePDF()" id="exportBtn" disabled>
+                        📄 Generar PDF
+                    </button>
+                    <button class="btn warning" onclick="showNewDayModal()">
+                        🔄 Día Nuevo
+                    </button>
                 </div>
             </div>
 
-            <!-- Action Buttons -->
-            <div class="btn-group">
-                <button class="btn secondary" onclick="generatePDF()" id="exportBtn" disabled>
-                    📄 Generar PDF
-                </button>
-                <button class="btn warning" onclick="showNewDayModal()">
-                    🔄 Día Nuevo
-                </button>
-            </div>
-        </div>
-
-        <!-- Tab Content: History -->
-        <div id="historyTab" class="tab-content">
-            <div class="history-section">
-                <div class="history-navigation">
-                    <div class="nav-arrows">
-                        <button class="arrow-btn" onclick="changeHistoryView(-1)">◀</button>
+            <!-- Tab Content: History -->
+            <div id="historyTab" class="tab-content">
+                <div class="history-section">
+                    <div class="history-navigation">
+                        <div class="nav-arrows">
+                            <button class="arrow-btn" onclick="changeHistoryView(-1)">◀</button>
+                        </div>
+                        <div class="history-date" id="historyDate">Noviembre 2024</div>
+                        <div class="nav-arrows">
+                            <button class="arrow-btn" onclick="changeHistoryView(1)">▶</button>
+                        </div>
                     </div>
-                    <div class="history-date" id="historyDate">Noviembre 2024</div>
-                    <div class="nav-arrows">
-                        <button class="arrow-btn" onclick="changeHistoryView(1)">▶</button>
+                    
+                    <div class="calendar-view" id="calendarView">
+                        <!-- Calendar will be generated here -->
+                    </div>
+                    
+                    <div id="historyDeliveries" class="delivery-list">
+                        <p style="text-align: center; color: #999; font-style: italic;">Selecciona un día para ver las entregas</p>
                     </div>
                 </div>
-                
-                <div class="calendar-view" id="calendarView">
-                    <!-- Calendar will be generated here -->
-                </div>
-                
-                <div id="historyDeliveries" class="delivery-list">
-                    <p style="text-align: center; color: #999; font-style: italic;">Selecciona un día para ver las entregas</p>
-                </div>
             </div>
-        </div>
 
-        <!-- Tab Content: Settings -->
-        <div id="settingsTab" class="tab-content">
-            <div class="controls">
-                <h3 style="margin-bottom: 20px; color: #333; font-weight: 600;">Gestión de Datos</h3>
-                
-                <!-- Export/Import Section -->
-                <div style="margin-bottom: 24px;">
-                    <button class="btn" onclick="exportData()">
-                        💾 Exportar Datos
-                    </button>
+            <!-- Tab Content: Settings -->
+            <div id="settingsTab" class="tab-content">
+                <div class="controls">
+                    <h3 style="margin-bottom: 20px; color: #333; font-weight: 600;">Gestión de Datos</h3>
                     
-                    <div class="file-input-wrapper" style="margin-top: 12px;">
-                        <input type="file" id="importFile" accept=".json" onchange="importData(event)">
-                        <label for="importFile" class="file-input-label">
-                            📂 Importar Datos
-                        </label>
+                    <!-- Export/Import Section -->
+                    <div style="margin-bottom: 24px;">
+                        <button class="btn" onclick="exportData()">
+                            💾 Exportar Datos
+                        </button>
+                        
+                        <div class="file-input-wrapper" style="margin-top: 12px;">
+                            <input type="file" id="importFile" accept=".json" onchange="importData(event)">
+                            <label for="importFile" class="file-input-label">
+                                📂 Importar Datos
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Delete Options -->
+                    <div class="delete-options">
+                        <h4 style="color: #ff6b6b; margin-bottom: 16px; font-weight: 600;">⚠️ Zona de Eliminación</h4>
+                        
+                        <button class="btn danger" onclick="showDeleteModal('day')">
+                            🗓️ Borrar Día
+                        </button>
+                        
+                        <button class="btn danger" onclick="showDeleteModal('month')">
+                            📅 Borrar Mes
+                        </button>
+                        
+                        <button class="btn danger" onclick="showDeleteModal('year')">
+                            📆 Borrar Año
+                        </button>
+                        
+                        <button class="btn danger" onclick="showDeleteModal('all')">
+                            🗑️ Borrar Todo
+                        </button>
                     </div>
                 </div>
+            </div>
+        </div>
 
-                <!-- Delete Options -->
-                <div class="delete-options">
-                    <h4 style="color: #ff6b6b; margin-bottom: 16px; font-weight: 600;">⚠️ Zona de Eliminación</h4>
-                    
-                    <button class="btn danger" onclick="showDeleteModal('day')">
-                        🗓️ Borrar Día
-                    </button>
-                    
-                    <button class="btn danger" onclick="showDeleteModal('month')">
-                        📅 Borrar Mes
-                    </button>
-                    
-                    <button class="btn danger" onclick="showDeleteModal('year')">
-                        📆 Borrar Año
-                    </button>
-                    
-                    <button class="btn danger" onclick="showDeleteModal('all')">
-                        🗑️ Borrar Todo
-                    </button>
+        <!-- Modal for delivery completion -->
+        <div class="modal" id="completeModal">
+            <div class="modal-content">
+                <h3>Completar Entrega</h3>
+                <p style="text-align: center; margin-bottom: 16px;">Cliente: <span id="modalClientName"></span></p>
+                <div class="distance-display" id="modalDistance">0 km</div>
+                <p style="text-align: center; color: #666; margin-bottom: 24px;">Distancia recorrida</p>
+                <button class="btn success" onclick="completeDelivery()">Entrega Completada</button>
+                <button class="btn secondary" onclick="closeModal()">Cancelar</button>
+            </div>
+        </div>
+
+        <!-- Modal for new day -->
+        <div class="modal" id="newDayModal">
+            <div class="modal-content">
+                <h3>🔄 Iniciar Día Nuevo</h3>
+                <p style="text-align: center; color: #666; margin-bottom: 24px;">
+                    Esto guardará las entregas de hoy en el historial y reiniciará la aplicación para un nuevo día de trabajo.
+                </p>
+                <button class="btn success" onclick="startNewDay()">Iniciar Día Nuevo</button>
+                <button class="btn secondary" onclick="closeModal()">Cancelar</button>
+            </div>
+        </div>
+
+        <!-- Modal for password -->
+        <div class="modal" id="passwordModal">
+            <div class="modal-content">
+                <h3 id="passwordModalTitle">Ingrese Contraseña</h3>
+                <div class="input-group">
+                    <label for="passwordInput">Contraseña</label>
+                    <input type="password" id="passwordInput" placeholder="Ingrese su contraseña">
                 </div>
+                <button class="btn" id="passwordConfirmBtn">Confirmar</button>
+                <button class="btn secondary" onclick="closeModal()">Cancelar</button>
             </div>
         </div>
-    </div>
 
-    <!-- Modal for delivery completion -->
-    <div class="modal" id="completeModal">
-        <div class="modal-content">
-            <h3>Completar Entrega</h3>
-            <p style="text-align: center; margin-bottom: 16px;">Cliente: <span id="modalClientName"></span></p>
-            <div class="distance-display" id="modalDistance">0 km</div>
-            <p style="text-align: center; color: #666; margin-bottom: 24px;">Distancia recorrida</p>
-            <button class="btn success" onclick="completeDelivery()">Entrega Completada</button>
-            <button class="btn secondary" onclick="closeModal()">Cancelar</button>
-        </div>
-    </div>
-
-    <!-- Modal for new day -->
-    <div class="modal" id="newDayModal">
-        <div class="modal-content">
-            <h3>🔄 Iniciar Día Nuevo</h3>
-            <p style="text-align: center; color: #666; margin-bottom: 24px;">
-                Esto guardará las entregas de hoy en el historial y reiniciará la aplicación para un nuevo día de trabajo.
-            </p>
-            <button class="btn success" onclick="startNewDay()">Iniciar Día Nuevo</button>
-            <button class="btn secondary" onclick="closeModal()">Cancelar</button>
-        </div>
-    </div>
-
-    <!-- Modal for password -->
-    <div class="modal" id="passwordModal">
-        <div class="modal-content">
-            <h3 id="passwordModalTitle">Ingrese Contraseña</h3>
-            <div class="input-group">
-                <label for="passwordInput">Contraseña</label>
-                <input type="password" id="passwordInput" placeholder="Ingrese su contraseña">
+        <!-- Modal for delete confirmation -->
+        <div class="modal" id="deleteModal">
+            <div class="modal-content">
+                <h3>⚠️ Confirmar Eliminación</h3>
+                <p id="deleteMessage" style="text-align: center; color: #666; margin-bottom: 24px;"></p>
+                <div class="input-group">
+                    <label for="deleteDate">Selecciona fecha:</label>
+                    <input type="date" id="deleteDate">
+                </div>
+                <button class="btn danger" id="confirmDeleteBtn">Eliminar</button>
+                <button class="btn secondary" onclick="closeModal()">Cancelar</button>
             </div>
-            <button class="btn" id="passwordConfirmBtn">Confirmar</button>
-            <button class="btn secondary" onclick="closeModal()">Cancelar</button>
         </div>
-    </div>
 
-    <!-- Modal for delete confirmation -->
-    <div class="modal" id="deleteModal">
-        <div class="modal-content">
-            <h3>⚠️ Confirmar Eliminación</h3>
-            <p id="deleteMessage" style="text-align: center; color: #666; margin-bottom: 24px;"></p>
-            <div class="input-group">
-                <label for="deleteDate">Selecciona fecha:</label>
-                <input type="date" id="deleteDate">
+        <!-- Modal for manual distance -->
+        <div class="modal" id="manualDistanceModal">
+            <div class="modal-content">
+                <h3>📍 Agregar Distancia Manual</h3>
+                <p style="text-align: center; color: #666; margin-bottom: 24px;">
+                    Ingresa la distancia recorrida manualmente
+                </p>
+                <div class="input-group">
+                    <label for="manualDistance">Distancia (km)</label>
+                    <input type="number" id="manualDistance" placeholder="Ej: 2.5" step="0.1" min="0">
+                </div>
+                <button class="btn success" onclick="addManualDistance()">Agregar Distancia</button>
+                <button class="btn secondary" onclick="closeModal()">Cancelar</button>
             </div>
-            <button class="btn danger" id="confirmDeleteBtn">Eliminar</button>
-            <button class="btn secondary" onclick="closeModal()">Cancelar</button>
-        </div>
-    </div>
-
-    <!-- Modal for manual distance -->
-    <div class="modal" id="manualDistanceModal">
-        <div class="modal-content">
-            <h3>📍 Agregar Distancia Manual</h3>
-            <p style="text-align: center; color: #666; margin-bottom: 24px;">
-                Ingresa la distancia recorrida manualmente
-            </p>
-            <div class="input-group">
-                <label for="manualDistance">Distancia (km)</label>
-                <input type="number" id="manualDistance" placeholder="Ej: 2.5" step="0.1" min="0">
-            </div>
-            <button class="btn success" onclick="addManualDistance()">Agregar Distancia</button>
-            <button class="btn secondary" onclick="closeModal()">Cancelar</button>
         </div>
     </div>
 
     <script>
+        // === VARIABLES GLOBALES ===
+        let currentUserIP = '';
+
+        // === SISTEMA DE LICENCIAS MEJORADO (COMPATIBLE CON IP) ===
+        
+        // Algoritmo original para licencias estándar
+        function generateLicenseKey(dateStr, id) {
+            const secretKey = 'DELIVERY2024';
+            const input = `${dateStr}-${id}-${secretKey}`;
+            
+            let hash = 0;
+            for (let i = 0; i < input.length; i++) {
+                const char = input.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash; // Convertir a 32bit
+            }
+            
+            // Convertir a string alfanumérico y formatear
+            const positiveHash = Math.abs(hash);
+            let keyStr = positiveHash.toString(36).toUpperCase();
+            
+            // Asegurar que tenga al menos 16 caracteres
+            while (keyStr.length < 16) {
+                keyStr = '0' + keyStr;
+            }
+            
+            // Tomar solo los primeros 16 caracteres
+            keyStr = keyStr.substring(0, 16);
+            
+            // Formatear como XXXX-XXXX-XXXX-XXXX
+            return `${keyStr.substring(0,4)}-${keyStr.substring(4,8)}-${keyStr.substring(8,12)}-${keyStr.substring(12,16)}`;
+        }
+
+        // Nuevo algoritmo para licencias por IP (DEBE COINCIDIR CON EL GENERADOR)
+        function generateLicenseKeyFromIP(ip, dateStr, validityDays) {
+            const secretKey = 'DELIVERY2024IP';
+            
+            // Crear un hash único basado en la IP, fecha y validez
+            const ipParts = ip.split('.').map(part => parseInt(part));
+            const ipSum = ipParts.reduce((sum, part) => sum + part, 0);
+            
+            // Generar componentes únicos
+            const ipHash = ipParts.join('') + ipSum.toString();
+            const dateHash = dateStr.replace(/-/g, '');
+            const validityHash = validityDays.toString().padStart(3, '0');
+            
+            const input = `${ipHash}-${dateHash}-${validityHash}-${secretKey}`;
+            
+            let hash = 0;
+            for (let i = 0; i < input.length; i++) {
+                const char = input.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash; // Convertir a 32bit
+            }
+            
+            // Añadir los octetos de la IP para más unicidad
+            hash = Math.abs(hash) + (ipParts[0] * 1000) + (ipParts[1] * 100) + (ipParts[2] * 10) + ipParts[3];
+            
+            // Convertir a string alfanumérico
+            let keyStr = hash.toString(36).toUpperCase();
+            
+            // Asegurar que tenga al menos 16 caracteres usando la IP
+            while (keyStr.length < 16) {
+                keyStr = ipParts[keyStr.length % 4].toString(36).toUpperCase() + keyStr;
+            }
+            
+            // Tomar solo los primeros 16 caracteres
+            keyStr = keyStr.substring(0, 16);
+            
+            // Formatear como XXXX-XXXX-XXXX-XXXX
+            return `${keyStr.substring(0,4)}-${keyStr.substring(4,8)}-${keyStr.substring(8,12)}-${keyStr.substring(12,16)}`;
+        }
+
+        // Función para validar formato de IP
+        function validateIPFormat(ip) {
+            const ipv4Regex = /^(\d{1,3}\.){3}\d{1,3}$/;
+            if (!ipv4Regex.test(ip)) return false;
+            
+            const parts = ip.split('.');
+            return parts.every(part => {
+                const num = parseInt(part);
+                return num >= 0 && num <= 255;
+            });
+        }
+
+        // Función para detectar IP del usuario
+        async function detectUserIP() {
+            console.log('🔍 Detectando IP del usuario...');
+            
+            try {
+                const services = [
+                    'https://api.ipify.org?format=json',
+                    'https://ipapi.co/json/',
+                    'https://jsonip.com'
+                ];
+                
+                for (const service of services) {
+                    try {
+                        const response = await fetch(service);
+                        const data = await response.json();
+                        
+                        let detectedIP = data.ip || data.IPv4 || data.query;
+                        
+                        if (detectedIP && validateIPFormat(detectedIP)) {
+                            currentUserIP = detectedIP;
+                            
+                            // Mostrar IP en la interfaz
+                            const ipInfoBox = document.getElementById('userIpInfo');
+                            const ipDisplay = document.getElementById('detectedIp');
+                            
+                            if (ipInfoBox && ipDisplay) {
+                                ipDisplay.textContent = detectedIP;
+                                ipInfoBox.style.display = 'block';
+                            }
+                            
+                            console.log('✅ IP detectada:', detectedIP);
+                            return detectedIP;
+                        }
+                    } catch (e) {
+                        continue;
+                    }
+                }
+                
+                throw new Error('No se pudo detectar la IP');
+                
+            } catch (error) {
+                console.warn('⚠️ Error detectando IP:', error.message);
+                
+                // Mostrar IP de ejemplo
+                const ipInfoBox = document.getElementById('userIpInfo');
+                const ipDisplay = document.getElementById('detectedIp');
+                
+                if (ipInfoBox && ipDisplay) {
+                    ipDisplay.textContent = 'No detectada (usa licencia estándar)';
+                    ipInfoBox.style.display = 'block';
+                }
+                
+                return null;
+            }
+        }
+
+        function validateLicenseFormat(license) {
+            console.log('🔍 Validando formato de licencia:', license);
+            
+            // Verificar que no esté vacío
+            if (!license || license.length === 0) {
+                console.log('❌ Licencia vacía');
+                return false;
+            }
+            
+            // Verificar longitud básica
+            if (license.length !== 19) {
+                console.log('❌ Longitud incorrecta:', license.length, 'debería ser 19');
+                return false;
+            }
+            
+            // Verificar formato XXXX-XXXX-XXXX-XXXX
+            const regex = /^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/;
+            const isValid = regex.test(license);
+            
+            console.log('📝 Resultado validación formato:', isValid ? '✅ VÁLIDO' : '❌ INVÁLIDO');
+            
+            return isValid;
+        }
+
+        function isValidLicense(license) {
+            console.log('');
+            console.log('🔐 === INICIANDO VALIDACIÓN DE LICENCIA MEJORADA ===');
+            console.log('📝 Licencia a validar:', license);
+            console.log('🌐 IP del usuario:', currentUserIP || 'No detectada');
+            
+            // PASO 1: Verificar formato
+            console.log('');
+            console.log('📋 PASO 1: Verificando formato...');
+            if (!validateLicenseFormat(license)) {
+                console.log('❌ FALLO: Formato inválido');
+                return false;
+            }
+            console.log('✅ Formato válido');
+
+            // PASO 2: Verificar licencias hardcodeadas PRIMERO
+            console.log('');
+            console.log('🔑 PASO 2: Verificando licencias de prueba hardcodeadas...');
+            const testLicenses = [
+                'TEST-TEST-TEST-0001',
+                'TEST-TEST-TEST-0002', 
+                'TEST-TEST-TEST-0003',
+                'DEMO-DEMO-DEMO-0001',
+                'DEMO-DEMO-DEMO-0002'
+            ];
+            
+            console.log('📝 Licencias hardcodeadas disponibles:', testLicenses);
+            
+            if (testLicenses.includes(license)) {
+                console.log('✅ ¡ENCONTRADA! Es una licencia de prueba hardcodeada');
+                console.log('🎉 RESULTADO: LICENCIA VÁLIDA (HARDCODEADA)');
+                return true;
+            }
+            console.log('ℹ️ No es una licencia hardcodeada, continuando...');
+
+            // PASO 3: Verificar licencias por IP (si tenemos IP)
+            if (currentUserIP) {
+                console.log('');
+                console.log('🌐 PASO 3: Verificando licencias por IP...');
+                console.log('📍 IP detectada:', currentUserIP);
+                
+                const today = new Date();
+                const validityOptions = [1, 7, 30, 90, 365]; // Días de validez comunes
+                
+                // Probar diferentes fechas y validez
+                for (let i = -365; i <= 30; i++) {
+                    const checkDate = new Date(today);
+                    checkDate.setDate(checkDate.getDate() + i);
+                    const dateStr = checkDate.toISOString().split('T')[0];
+                    
+                    for (const validityDays of validityOptions) {
+                        const generatedKey = generateLicenseKeyFromIP(currentUserIP, dateStr, validityDays);
+                        if (generatedKey === license) {
+                            console.log('✅ ¡ENCONTRADA! Licencia por IP válida');
+                            console.log('📅 Fecha:', dateStr);
+                            console.log('📍 IP:', currentUserIP);
+                            console.log('⏰ Validez:', validityDays, 'días');
+                            console.log('📏 Días desde hoy:', i);
+                            console.log('🎉 RESULTADO: LICENCIA VÁLIDA (POR IP)');
+                            return true;
+                        }
+                    }
+                }
+                console.log('❌ No encontrada como licencia por IP');
+            } else {
+                console.log('');
+                console.log('⚠️ PASO 3: Saltado - No hay IP detectada');
+            }
+
+            // PASO 4: Verificar con algoritmo estándar
+            console.log('');
+            console.log('🧮 PASO 4: Verificando con algoritmo estándar...');
+            console.log('📅 Rango de fechas: -365 a +30 días desde hoy');
+            console.log('🔢 Rango de IDs: 1 a 100');
+
+            const today = new Date();
+            
+            for (let i = -365; i <= 30; i++) {
+                const checkDate = new Date(today);
+                checkDate.setDate(checkDate.getDate() + i);
+                const dateStr = checkDate.toISOString().split('T')[0];
+                
+                for (let id = 1; id <= 100; id++) {
+                    const generatedKey = generateLicenseKey(dateStr, id);
+                    if (generatedKey === license) {
+                        console.log('✅ ¡ENCONTRADA! Licencia estándar válida');
+                        console.log('📅 Fecha:', dateStr);
+                        console.log('🔢 ID:', id);
+                        console.log('📏 Días desde hoy:', i);
+                        console.log('🎉 RESULTADO: LICENCIA VÁLIDA (ESTÁNDAR)');
+                        return true;
+                    }
+                }
+            }
+            
+            console.log('❌ FALLO: Licencia no encontrada en ningún método');
+            console.log('🎯 RESULTADO FINAL: LICENCIA INVÁLIDA');
+            return false;
+        }
+
+        function formatLicenseInput(input) {
+            // Remover caracteres no válidos y convertir a mayúsculas
+            let value = input.value.replace(/[^A-Z0-9]/g, '').toUpperCase();
+            
+            // Limitar a 16 caracteres
+            value = value.substring(0, 16);
+            
+            // Agregar guiones cada 4 caracteres
+            const formatted = value.match(/.{1,4}/g)?.join('-') || value;
+            
+            input.value = formatted;
+        }
+
+        function validateLicense() {
+            console.clear();
+            console.log('🚀 === INICIANDO PROCESO DE LOGIN MEJORADO ===');
+            
+            const licenseInput = document.getElementById('licenseInput');
+            const errorEl = document.getElementById('licenseError');
+            const loginBtn = document.getElementById('loginBtn');
+            
+            const license = licenseInput.value.trim();
+            
+            console.log('📝 Licencia ingresada:', `"${license}"`);
+            console.log('📏 Longitud:', license.length);
+            console.log('🌐 IP del usuario:', currentUserIP || 'No detectada');
+            
+            if (!license) {
+                console.log('❌ ERROR: Licencia vacía');
+                showLicenseError('Por favor ingrese una licencia');
+                return;
+            }
+            
+            console.log('🔄 Cambiando estado del botón...');
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'Validando...';
+            
+            // Simular delay de validación con logging
+            setTimeout(() => {
+                console.log('⏰ Iniciando validación después del delay...');
+                
+                const isValid = isValidLicense(license);
+                
+                console.log('');
+                console.log('🎯 === RESULTADO DE VALIDACIÓN ===');
+                console.log('📝 Licencia:', license);
+                console.log('🎯 Es válida:', isValid ? '✅ SÍ' : '❌ NO');
+                
+                if (isValid) {
+                    console.log('');
+                    console.log('✅ === LICENCIA VÁLIDA - PROCEDIENDO ===');
+                    
+                    // Guardar licencia válida
+                    localStorage.setItem('deliveryTrackerLicense', license);
+                    console.log('💾 Licencia guardada en localStorage');
+                    
+                    // Mostrar aplicación principal
+                    console.log('🚀 Intentando mostrar aplicación principal...');
+                    showMainApp();
+                    
+                    const message = currentUserIP ? 
+                        `¡Licencia válida! Bienvenido (IP: ${currentUserIP})` : 
+                        '¡Licencia válida! Bienvenido a Delivery Tracker Pro';
+                    showNotification(message, 'success');
+                } else {
+                    console.log('');
+                    console.log('❌ === LICENCIA INVÁLIDA ===');
+                    
+                    const errorMsg = currentUserIP ? 
+                        `Licencia inválida para tu IP (${currentUserIP}). Contacta al administrador.` :
+                        'Licencia inválida. Contacte al administrador para obtener una licencia válida.';
+                    
+                    showLicenseError(errorMsg);
+                    loginBtn.disabled = false;
+                    loginBtn.textContent = 'Ingresar';
+                }
+            }, 1000);
+        }
+
+        function showLicenseError(message) {
+            const errorEl = document.getElementById('licenseError');
+            errorEl.textContent = message;
+            errorEl.style.display = 'block';
+            
+            setTimeout(() => {
+                errorEl.style.display = 'none';
+            }, 5000);
+        }
+
+        function showMainApp() {
+            console.log('🎯 Ejecutando showMainApp()...');
+            
+            const loginScreen = document.getElementById('loginScreen');
+            const mainApp = document.getElementById('mainApp');
+            
+            console.log('📱 Elementos encontrados:', {
+                loginScreen: !!loginScreen,
+                mainApp: !!mainApp
+            });
+            
+            if (!loginScreen || !mainApp) {
+                console.error('❌ Error: No se encontraron los elementos necesarios');
+                showNotification('Error interno: Elementos no encontrados', 'error');
+                return;
+            }
+            
+            try {
+                // Ocultar pantalla de login
+                loginScreen.style.display = 'none';
+                console.log('👀 Pantalla de login ocultada');
+                
+                // Mostrar aplicación principal
+                mainApp.classList.add('active');
+                mainApp.style.display = 'block'; // Forzar display
+                console.log('🚀 Aplicación principal mostrada');
+                
+                // Inicializar la aplicación
+                console.log('⚙️ Inicializando aplicación...');
+                initializeApp();
+                console.log('✅ Aplicación inicializada correctamente');
+                
+            } catch (error) {
+                console.error('❌ Error en showMainApp():', error);
+                showNotification('Error al cargar la aplicación: ' + error.message, 'error');
+                
+                // Restaurar estado de login en caso de error
+                loginScreen.style.display = 'block';
+                const loginBtn = document.getElementById('loginBtn');
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Ingresar';
+            }
+        }
+
+        function logout() {
+            if (confirm('¿Estás seguro de que deseas cerrar sesión?')) {
+                localStorage.removeItem('deliveryTrackerLicense');
+                location.reload();
+            }
+        }
+
+        // Verificar licencia al cargar
+        function checkLicense() {
+            console.log('🔍 Verificando licencia guardada...');
+            
+            const savedLicense = localStorage.getItem('deliveryTrackerLicense');
+            console.log('💾 Licencia en localStorage:', savedLicense);
+            
+            if (savedLicense) {
+                console.log('🔑 Validando licencia guardada...');
+                
+                if (isValidLicense(savedLicense)) {
+                    console.log('✅ Licencia guardada es válida, mostrando app...');
+                    showMainApp();
+                } else {
+                    console.log('❌ Licencia guardada no es válida, limpiando...');
+                    // Limpiar licencia inválida
+                    localStorage.removeItem('deliveryTrackerLicense');
+                    showLoginScreen();
+                }
+            } else {
+                console.log('ℹ️ No hay licencia guardada, mostrando login...');
+                showLoginScreen();
+            }
+        }
+        
+        function showLoginScreen() {
+            console.log('🔐 Mostrando pantalla de login...');
+            const loginScreen = document.getElementById('loginScreen');
+            const mainApp = document.getElementById('mainApp');
+            
+            if (loginScreen) {
+                loginScreen.style.display = 'block';
+            }
+            
+            if (mainApp) {
+                mainApp.classList.remove('active');
+                mainApp.style.display = 'none';
+            }
+            
+            console.log('✅ Pantalla de login mostrada');
+            
+            // Detectar IP del usuario cuando se muestra el login
+            detectUserIP();
+        }
+
+        // Event listeners para el input de licencia
+        document.getElementById('licenseInput').addEventListener('input', function() {
+            formatLicenseInput(this);
+        });
+
+        document.getElementById('licenseInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                validateLicense();
+            }
+        });
+
+        // === CÓDIGO ORIGINAL DE LA APLICACIÓN ===
         // Variables globales
         let isShiftActive = false;
         let shiftStartTime = null;
@@ -913,16 +1596,41 @@
             minDistance: 15
         };
 
+        // Función principal de inicialización
+        function initializeApp() {
+            try {
+                console.log('🔧 Iniciando carga de datos...');
+                loadHistoryData();
+                loadTodayData();
+                
+                console.log('📊 Actualizando estadísticas...');
+                updateStats();
+                updateDeliveryList();
+                updateCalendarView();
+                updateGPSDebug();
+                
+                console.log('📱 Inicializando servicios...');
+                initializeTelegramSupport();
+                requestLocationPermission();
+                
+                console.log('✅ Aplicación inicializada correctamente');
+            } catch (error) {
+                console.error('❌ Error en initializeApp:', error);
+                showNotification('Error al inicializar: ' + error.message, 'error');
+                
+                // Aún así mostrar la app con funcionalidad básica
+                try {
+                    updateStats();
+                    updateDeliveryList();
+                } catch (e) {
+                    console.error('Error crítico:', e);
+                }
+            }
+        }
+
         // Cargar datos al iniciar
         document.addEventListener('DOMContentLoaded', function() {
-            loadHistoryData();
-            loadTodayData();
-            updateStats();
-            updateDeliveryList();
-            updateCalendarView();
-            updateGPSDebug();
-            initializeTelegramSupport();
-            requestLocationPermission();
+            checkLicense();
         });
 
         // Función para inicializar soporte de Telegram
@@ -2030,6 +2738,12 @@
             doc.setFontSize(12);
             doc.setTextColor(0, 0, 0);
             let yPos = 40;
+
+            // Información de IP si está disponible
+            if (currentUserIP) {
+                doc.text(`IP del dispositivo: ${currentUserIP}`, 20, yPos);
+                yPos += 8;
+            }
 
             if (shiftStartTime) {
                 doc.text(`Inicio de jornada: ${shiftStartTime.toLocaleString('es-ES')}`, 20, yPos);
